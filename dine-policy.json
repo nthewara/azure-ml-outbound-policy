@@ -1,0 +1,170 @@
+{
+  "properties": {
+    "displayName": "Azure ML / AI Studio - Remediate unapproved outbound rules (DINE)",
+    "description": "Detects non-compliant outbound rules on ML workspaces and remediates by redeploying the workspace managed network with only approved rules. Covers portal path where Deny policy may not intercept during propagation delay.",
+    "metadata": {
+      "version": "1.0.0",
+      "category": "Machine Learning"
+    },
+    "mode": "All",
+    "parameters": {
+      "effect": {
+        "type": "String",
+        "metadata": {
+          "displayName": "Effect",
+          "description": "DeployIfNotExists or Disabled"
+        },
+        "allowedValues": [
+          "DeployIfNotExists",
+          "Disabled"
+        ],
+        "defaultValue": "DeployIfNotExists"
+      },
+      "allowedFQDNs": {
+        "type": "Array",
+        "metadata": {
+          "displayName": "Allowed FQDN destinations",
+          "description": "FQDNs that are permitted as outbound rules"
+        },
+        "defaultValue": []
+      },
+      "allowedServiceTags": {
+        "type": "Array",
+        "metadata": {
+          "displayName": "Allowed Service Tags",
+          "description": "Service Tags that are permitted as outbound rules"
+        },
+        "defaultValue": []
+      },
+      "allowedPrivateEndpointSubresources": {
+        "type": "Array",
+        "metadata": {
+          "displayName": "Allowed Private Endpoint subresource targets",
+          "description": "PE subresource targets that are permitted"
+        },
+        "defaultValue": []
+      }
+    },
+    "policyRule": {
+      "if": {
+        "allOf": [
+          {
+            "field": "type",
+            "equals": "Microsoft.MachineLearningServices/workspaces"
+          },
+          {
+            "field": "Microsoft.MachineLearningServices/workspaces/managedNetwork.isolationMode",
+            "equals": "AllowOnlyApprovedOutbound"
+          }
+        ]
+      },
+      "then": {
+        "effect": "[parameters('effect')]",
+        "details": {
+          "type": "Microsoft.MachineLearningServices/workspaces/outboundRules",
+          "existenceCondition": {
+            "anyOf": [
+              {
+                "field": "Microsoft.MachineLearningServices/workspaces/outboundRules/category",
+                "in": [
+                  "SystemDefault",
+                  "Required"
+                ]
+              },
+              {
+                "allOf": [
+                  {
+                    "field": "Microsoft.MachineLearningServices/workspaces/outboundRules/type",
+                    "equals": "FQDN"
+                  },
+                  {
+                    "field": "Microsoft.MachineLearningServices/workspaces/outboundRules/FQDN.destination",
+                    "in": "[parameters('allowedFQDNs')]"
+                  }
+                ]
+              },
+              {
+                "allOf": [
+                  {
+                    "field": "Microsoft.MachineLearningServices/workspaces/outboundRules/type",
+                    "equals": "ServiceTag"
+                  },
+                  {
+                    "field": "Microsoft.MachineLearningServices/workspaces/outboundRules/ServiceTag.destination.serviceTag",
+                    "in": "[parameters('allowedServiceTags')]"
+                  }
+                ]
+              },
+              {
+                "allOf": [
+                  {
+                    "field": "Microsoft.MachineLearningServices/workspaces/outboundRules/type",
+                    "equals": "PrivateEndpoint"
+                  },
+                  {
+                    "field": "Microsoft.MachineLearningServices/workspaces/outboundRules/PrivateEndpoint.destination.subresourceTarget",
+                    "in": "[parameters('allowedPrivateEndpointSubresources')]"
+                  }
+                ]
+              }
+            ]
+          },
+          "roleDefinitionIds": [
+            "/providers/Microsoft.Authorization/roleDefinitions/b24988ac-6180-42a0-ab88-20f7382dd24c"
+          ],
+          "deployment": {
+            "properties": {
+              "mode": "incremental",
+              "parameters": {
+                "workspaceName": {
+                  "value": "[field('name')]"
+                },
+                "location": {
+                  "value": "[field('location')]"
+                },
+                "allowedFQDNs": {
+                  "value": "[parameters('allowedFQDNs')]"
+                },
+                "allowedServiceTags": {
+                  "value": "[parameters('allowedServiceTags')]"
+                }
+              },
+              "template": {
+                "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+                "contentVersion": "1.0.0.0",
+                "parameters": {
+                  "workspaceName": {
+                    "type": "string"
+                  },
+                  "location": {
+                    "type": "string"
+                  },
+                  "allowedFQDNs": {
+                    "type": "array"
+                  },
+                  "allowedServiceTags": {
+                    "type": "array"
+                  }
+                },
+                "resources": [
+                  {
+                    "type": "Microsoft.MachineLearningServices/workspaces",
+                    "apiVersion": "2024-10-01",
+                    "name": "[parameters('workspaceName')]",
+                    "location": "[parameters('location')]",
+                    "properties": {
+                      "managedNetwork": {
+                        "isolationMode": "AllowOnlyApprovedOutbound",
+                        "outboundRules": {}
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
