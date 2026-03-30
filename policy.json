@@ -14,7 +14,11 @@
           "displayName": "Effect",
           "description": "Deny, Audit, or Disabled"
         },
-        "allowedValues": ["Audit", "Deny", "Disabled"],
+        "allowedValues": [
+          "Audit",
+          "Deny",
+          "Disabled"
+        ],
         "defaultValue": "Audit"
       },
       "allowedFQDNs": {
@@ -47,7 +51,10 @@
           "displayName": "Allow system-managed rules",
           "description": "If 'true', rules with category 'SystemDefault' or 'Required' are always permitted regardless of the allow lists."
         },
-        "allowedValues": ["true", "false"],
+        "allowedValues": [
+          "true",
+          "false"
+        ],
         "defaultValue": "true"
       }
     },
@@ -61,7 +68,6 @@
           {
             "anyOf": [
               {
-                "comment": "--- Block unapproved FQDN rules ---",
                 "allOf": [
                   {
                     "field": "Microsoft.MachineLearningServices/workspaces/outboundRules/type",
@@ -87,7 +93,10 @@
                           },
                           {
                             "field": "Microsoft.MachineLearningServices/workspaces/outboundRules/category",
-                            "notIn": ["SystemDefault", "Required"]
+                            "notIn": [
+                              "SystemDefault",
+                              "Required"
+                            ]
                           }
                         ]
                       }
@@ -96,7 +105,6 @@
                 ]
               },
               {
-                "comment": "--- Block unapproved ServiceTag rules ---",
                 "allOf": [
                   {
                     "field": "Microsoft.MachineLearningServices/workspaces/outboundRules/type",
@@ -122,7 +130,10 @@
                           },
                           {
                             "field": "Microsoft.MachineLearningServices/workspaces/outboundRules/category",
-                            "notIn": ["SystemDefault", "Required"]
+                            "notIn": [
+                              "SystemDefault",
+                              "Required"
+                            ]
                           }
                         ]
                       }
@@ -131,7 +142,6 @@
                 ]
               },
               {
-                "comment": "--- Block unapproved PrivateEndpoint rules ---",
                 "allOf": [
                   {
                     "field": "Microsoft.MachineLearningServices/workspaces/outboundRules/type",
@@ -157,7 +167,10 @@
                           },
                           {
                             "field": "Microsoft.MachineLearningServices/workspaces/outboundRules/category",
-                            "notIn": ["SystemDefault", "Required"]
+                            "notIn": [
+                              "SystemDefault",
+                              "Required"
+                            ]
                           }
                         ]
                       }

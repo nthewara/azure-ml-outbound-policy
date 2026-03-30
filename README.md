@@ -83,3 +83,20 @@ resource "azurerm_policy_definition" "ml_outbound_rules" {
 - [Built-in policy: Managed VNet isolation mode](https://www.azadvertizer.net/azpolicyadvertizer/6ddb1705-c8cf-450e-aa4b-19ad6703c440.html) — the reference policy this is based on
 - [Azure ML managed network docs](https://learn.microsoft.com/en-us/azure/machine-learning/how-to-managed-network)
 - [Azure Policy aliases for ML workspaces](https://github.com/maciejporebski/azure-policy-aliases/blob/master/aliases/Microsoft.MachineLearningServices/workspaces.md)
+
+## Test Results
+
+Tested on Azure subscription with:
+- **RG:** `rg-policy-test`
+- **ML Workspace:** `ws-policy-test` (AllowOnlyApprovedOutbound)
+- **Policy effect:** Deny
+
+| Test | Rule | Destination | Result |
+|------|------|-------------|--------|
+| Unapproved FQDN | `test-bad-fqdn` | `evil.com` | ❌ **RequestDisallowedByPolicy** |
+| Approved FQDN | `test-good-fqdn` | `pypi.org` | ✅ Created successfully |
+
+Policy correctly evaluates:
+- `outboundRules/type` → matches rule type (FQDN, ServiceTag, PrivateEndpoint)
+- `outboundRules/FQDN.destination` → checks against allowed list
+- `outboundRules/category` → exempts SystemDefault/Required rules
