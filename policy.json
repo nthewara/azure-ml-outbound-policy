@@ -1,0 +1,177 @@
+{
+  "properties": {
+    "displayName": "Azure ML / AI Studio - Enforce approved outbound rules only",
+    "description": "Denies creation or modification of outbound rules on Azure Machine Learning / AI Studio managed networks that do not match the approved list. Use this to govern which FQDN, ServiceTag, and PrivateEndpoint outbound rules are permitted. Evaluates the child resource type 'workspaces/outboundRules'.",
+    "metadata": {
+      "version": "1.0.0",
+      "category": "Machine Learning"
+    },
+    "mode": "All",
+    "parameters": {
+      "effect": {
+        "type": "String",
+        "metadata": {
+          "displayName": "Effect",
+          "description": "Deny, Audit, or Disabled"
+        },
+        "allowedValues": ["Audit", "Deny", "Disabled"],
+        "defaultValue": "Audit"
+      },
+      "allowedFQDNs": {
+        "type": "Array",
+        "metadata": {
+          "displayName": "Allowed FQDN destinations",
+          "description": "List of approved FQDNs for outbound FQDN rules (e.g., 'pypi.org', '*.anaconda.com'). Only evaluated for rules of type 'FQDN'."
+        },
+        "defaultValue": []
+      },
+      "allowedServiceTags": {
+        "type": "Array",
+        "metadata": {
+          "displayName": "Allowed Service Tags",
+          "description": "List of approved Azure Service Tags for outbound ServiceTag rules (e.g., 'AzureActiveDirectory', 'AzureMonitor'). Only evaluated for rules of type 'ServiceTag'."
+        },
+        "defaultValue": []
+      },
+      "allowedPrivateEndpointSubresources": {
+        "type": "Array",
+        "metadata": {
+          "displayName": "Allowed Private Endpoint subresource targets",
+          "description": "List of approved subresource targets for PrivateEndpoint rules (e.g., 'blob', 'vault', 'amlworkspace'). Only evaluated for rules of type 'PrivateEndpoint'."
+        },
+        "defaultValue": []
+      },
+      "allowSystemRules": {
+        "type": "String",
+        "metadata": {
+          "displayName": "Allow system-managed rules",
+          "description": "If 'true', rules with category 'SystemDefault' or 'Required' are always permitted regardless of the allow lists."
+        },
+        "allowedValues": ["true", "false"],
+        "defaultValue": "true"
+      }
+    },
+    "policyRule": {
+      "if": {
+        "allOf": [
+          {
+            "field": "type",
+            "equals": "Microsoft.MachineLearningServices/workspaces/outboundRules"
+          },
+          {
+            "anyOf": [
+              {
+                "comment": "--- Block unapproved FQDN rules ---",
+                "allOf": [
+                  {
+                    "field": "Microsoft.MachineLearningServices/workspaces/outboundRules/type",
+                    "equals": "FQDN"
+                  },
+                  {
+                    "not": {
+                      "field": "Microsoft.MachineLearningServices/workspaces/outboundRules/FQDN.destination",
+                      "in": "[parameters('allowedFQDNs')]"
+                    }
+                  },
+                  {
+                    "anyOf": [
+                      {
+                        "value": "[parameters('allowSystemRules')]",
+                        "equals": "false"
+                      },
+                      {
+                        "allOf": [
+                          {
+                            "value": "[parameters('allowSystemRules')]",
+                            "equals": "true"
+                          },
+                          {
+                            "field": "Microsoft.MachineLearningServices/workspaces/outboundRules/category",
+                            "notIn": ["SystemDefault", "Required"]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "comment": "--- Block unapproved ServiceTag rules ---",
+                "allOf": [
+                  {
+                    "field": "Microsoft.MachineLearningServices/workspaces/outboundRules/type",
+                    "equals": "ServiceTag"
+                  },
+                  {
+                    "not": {
+                      "field": "Microsoft.MachineLearningServices/workspaces/outboundRules/ServiceTag.destination.serviceTag",
+                      "in": "[parameters('allowedServiceTags')]"
+                    }
+                  },
+                  {
+                    "anyOf": [
+                      {
+                        "value": "[parameters('allowSystemRules')]",
+                        "equals": "false"
+                      },
+                      {
+                        "allOf": [
+                          {
+                            "value": "[parameters('allowSystemRules')]",
+                            "equals": "true"
+                          },
+                          {
+                            "field": "Microsoft.MachineLearningServices/workspaces/outboundRules/category",
+                            "notIn": ["SystemDefault", "Required"]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "comment": "--- Block unapproved PrivateEndpoint rules ---",
+                "allOf": [
+                  {
+                    "field": "Microsoft.MachineLearningServices/workspaces/outboundRules/type",
+                    "equals": "PrivateEndpoint"
+                  },
+                  {
+                    "not": {
+                      "field": "Microsoft.MachineLearningServices/workspaces/outboundRules/PrivateEndpoint.destination.subresourceTarget",
+                      "in": "[parameters('allowedPrivateEndpointSubresources')]"
+                    }
+                  },
+                  {
+                    "anyOf": [
+                      {
+                        "value": "[parameters('allowSystemRules')]",
+                        "equals": "false"
+                      },
+                      {
+                        "allOf": [
+                          {
+                            "value": "[parameters('allowSystemRules')]",
+                            "equals": "true"
+                          },
+                          {
+                            "field": "Microsoft.MachineLearningServices/workspaces/outboundRules/category",
+                            "notIn": ["SystemDefault", "Required"]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "then": {
+        "effect": "[parameters('effect')]"
+      }
+    }
+  }
+}
